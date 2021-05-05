@@ -1,0 +1,56 @@
+---
+title: "May 5th 2021"
+author: "Amy"
+date: "04/05/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(tidytuesdayR)
+```
+
+```{r}
+water <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-05-04/water.csv')
+```
+
+```{r}
+water %>%
+  ggplot() +
+  geom_bar(aes(x = source)) +
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 9))
+```
+
+```{r}
+world_map <- map_data("world")
+
+water <- water %>%
+  mutate(source = ifelse(water_source == "Protected Spring" | water_source == "Unprotected Spring" | water_source == "Undefined Spring", "Spring",
+                         ifelse(water_source == "Protected Shallow Well" | water_source == "Unprotected Shallow Well" | water_source == "Undefined Shallow Well", "Shallow Well",
+                                ifelse(water_source == "Delivered Water" | water_source == "Packaged water", "Delivered or Packaged", 
+                                       ifelse(water_source == "Surface Water (River/Stream/Lake/Pond/Dam)", "Surface Water",
+                                              water_source)))))
+
+water <- water %>%
+  replace_na(list(source = "Unknown"))
+
+water %>%
+  dplyr::select(source) %>%
+  unique()
+```
+
+```{r, fig.dim=(10,5)}
+ggplot() +
+  geom_polygon(data = world_map, aes(x = long, y = lat, group = group), fill = "white", color = "gray88", size = 1) +
+  geom_jitter(data = water, aes(x = lon_deg, y = lat_deg, color = source), size = .01, alpha = 1) +
+  labs(color = "Water source") +
+  scale_color_manual(values = c("#4eca65", "#6168ec", "#d287fa", "#ef58b8", "#7acdfc", "#ef7b73", "#ecd613", "#09dcc4", "#695f72")) +
+  scale_x_continuous(limits = c(-20,65)) +
+  scale_y_continuous(limits = c(-35, 40)) +
+  theme_void() +
+  guides(colour = guide_legend(override.aes = list(size=5)))
+
+ggsave("plot.png", width = 27, height = 20, units = "cm", dpi = 500)
+```
+
